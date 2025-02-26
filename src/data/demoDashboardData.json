@@ -1,0 +1,17 @@
+{
+  "metrics": {
+    "temperature": "98.6°F",
+    "heartRate": "72 bpm",
+    "oxygenLevel": "98%"
+  },
+  "activity": {
+    "steps": "5,280",
+    "distance": "2.4 mi",
+    "calories": "320"
+  },
+  "sleep": {
+    "hoursSlept": "7.5 hrs",
+    "deepSleep": "2.3 hrs",
+    "score": "82"
+  }
+} 

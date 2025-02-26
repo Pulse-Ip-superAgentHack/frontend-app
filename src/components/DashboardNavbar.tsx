@@ -67,8 +67,8 @@ const DashboardNavbar = () => {
             </svg>
           </Link>
           
-          {/* User account icon */}
-          <Link href="/account" className="rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center h-8 w-8">
+          {/* User account icon - Navigate to dashboard instead of account */}
+          <Link href="/dashboard" className="rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center h-8 w-8">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               viewBox="0 0 24 24" 

@@ -18,9 +18,21 @@ export const saveTokens = (tokens: TokenData) => {
 }
 
 export const getTokens = (): (TokenData & { expiresAt: number }) | null => {
-  const tokens = localStorage.getItem('fitbitTokens')
-  if (!tokens) return null
-  return JSON.parse(tokens)
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
+  const tokensString = localStorage.getItem('fitbitTokens');
+  if (!tokensString) {
+    return null;
+  }
+  
+  try {
+    return JSON.parse(tokensString);
+  } catch (error) {
+    console.error('Error parsing tokens', error);
+    return null;
+  }
 }
 
 export const isTokenExpired = () => {
@@ -57,5 +69,11 @@ export const getValidToken = async (): Promise<string | null> => {
     localStorage.removeItem('fitbitData')
     window.dispatchEvent(new Event('storage'))
     return null
+  }
+}
+
+export function removeTokens() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('fitbitTokens');
   }
 } 

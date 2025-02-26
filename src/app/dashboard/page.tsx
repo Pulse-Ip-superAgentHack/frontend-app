@@ -1,7 +1,9 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { getTokens } from '@/utils/tokenStorage'
 
 // Remove or use FitbitData
 // You can comment it out if not using
@@ -41,193 +43,156 @@ interface FitbitData {
   }
 }
 
-// Content component that uses search params
-function DashboardContent() {
-  const [data, setData] = useState<any>(null)
+export default function DashboardPage() {
+  const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const searchParams = useSearchParams()
-  const code = searchParams.get('code')
-
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const router = useRouter()
+  
   useEffect(() => {
-    if (code) {
-      fetch(`/api/test?code=${code}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            // Handle API error response
-            setError(Array.isArray(data.error) 
-              ? data.error[0].message 
-              : data.error)
-            setLoading(false)
-            return
+    // Function to load dashboard data
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true)
+        
+        // Get tokens from storage
+        const tokens = getTokens()
+        
+        // Check if authenticated
+        if (tokens) {
+          setIsAuthenticated(true)
+          
+          // Fetch real dashboard data from API
+          const response = await fetch('/api/dashboard', {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch dashboard data')
           }
-          setData(data)
-          setLoading(false)
-        })
-        .catch(err => {
-          setError(err.message)
-          setLoading(false)
-        })
-    } else {
-      setError('No authorization code provided')
-      setLoading(false)
+          
+          const data = await response.json()
+          setDashboardData(data)
+        } else {
+          // Load demo data if not authenticated
+          const demoData = await import('@/data/demoDashboardData.json')
+          setDashboardData(demoData.default)
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error)
+        // Load demo data as fallback
+        const demoData = await import('@/data/demoDashboardData.json')
+        setDashboardData(demoData.default)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [code])
-
+    
+    loadDashboardData()
+  }, [])
+  
+  const handleSignIn = () => {
+    router.push('/auth/signin')
+  }
+  
+  const handleViewRawData = () => {
+    router.push('/raw-data')
+  }
+  
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     )
   }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-red-50 p-6 rounded-lg max-w-lg w-full">
-          <h3 className="text-red-800 font-medium text-lg mb-2">Error Loading Data</h3>
-          <p className="text-red-600">{error}</p>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-          >
-            Return Home
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-yellow-50 p-6 rounded-lg">
-          <h3 className="text-yellow-800 font-medium">No Data Available</h3>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition-colors"
-          >
-            Return Home
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Add raw data display for debugging
+  
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Debug Information</h2>
-          <div className="overflow-x-auto">
-            <pre className="bg-gray-100 p-4 rounded">
-              {JSON.stringify(data, null, 2)}
-            </pre>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-newsreader">Dashboard</h1>
+          <div className="flex space-x-4">
+            {!isAuthenticated ? (
+              <button 
+                onClick={handleSignIn}
+                className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
+              >
+                Sign In
+              </button>
+            ) : (
+              <button 
+                onClick={handleViewRawData}
+                className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
+              >
+                View Raw Data
+              </button>
+            )}
           </div>
         </div>
-
-        {/* Profile Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Profile Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">Name</p>
-              <p className="text-lg font-semibold">{data.profile?.user.fullName}</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">Age</p>
-              <p className="text-lg font-semibold">{data.profile?.user.age} years</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">Height</p>
-              <p className="text-lg font-semibold">{data.profile?.user.height} cm</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">Weight</p>
-              <p className="text-lg font-semibold">{data.profile?.user.weight} kg</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Activity Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Today&apos;s Activity</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Steps</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{data.activities?.summary.steps || 0}</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Calories</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{data.activities?.summary.calories || 0} kcal</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Distance</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{data.activities?.summary.distance || 0} km</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Active Minutes</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{data.activities?.summary.activeMinutes || 0} mins</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Sleep Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Sleep Data</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">Total Sleep Time</p>
-              <p className="text-lg font-semibold">
-                {Math.floor((data.sleep?.summary.totalMinutesAsleep || 0) / 60)}h {(data.sleep?.summary.totalMinutesAsleep || 0) % 60}m
-              </p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">Time in Bed</p>
-              <p className="text-lg font-semibold">
-                {Math.floor((data.sleep?.summary.totalTimeInBed || 0) / 60)}h {(data.sleep?.summary.totalTimeInBed || 0) % 60}m
-              </p>
+        
+        {/* Dashboard Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Health Metrics */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg mb-3">Health Metrics</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Temperature</p>
+                <p className="text-2xl font-inter">{dashboardData?.metrics?.temperature || "98.6°F"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Heart Rate</p>
+                <p className="text-2xl font-inter">{dashboardData?.metrics?.heartRate || "72 bpm"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Oxygen Level</p>
+                <p className="text-2xl font-inter">{dashboardData?.metrics?.oxygenLevel || "98%"}</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Heart Rate Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-6">Heart Rate</h2>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-500">Resting Heart Rate</p>
-            <p className="text-lg font-semibold">
-              {data.heartRate?.['activities-heart'][0]?.value.restingHeartRate || 'N/A'} bpm
-            </p>
+          
+          {/* Activity Summary */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg mb-3">Activity Summary</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Steps Today</p>
+                <p className="text-2xl font-inter">{dashboardData?.activity?.steps || "5,280"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Distance</p>
+                <p className="text-2xl font-inter">{dashboardData?.activity?.distance || "2.4 mi"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Calories Burned</p>
+                <p className="text-2xl font-inter">{dashboardData?.activity?.calories || "320"}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Sleep Data */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg mb-3">Sleep Data</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Hours Slept</p>
+                <p className="text-2xl font-inter">{dashboardData?.sleep?.hoursSlept || "7.5 hrs"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Deep Sleep</p>
+                <p className="text-2xl font-inter">{dashboardData?.sleep?.deepSleep || "2.3 hrs"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Sleep Score</p>
+                <p className="text-2xl font-inter">{dashboardData?.sleep?.score || "82"}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
-
-// Main component with proper suspense boundary
-export default function Dashboard() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
   )
 } 
