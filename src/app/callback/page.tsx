@@ -12,29 +12,27 @@ function CallbackContent() {
   useEffect(() => {
     async function handleCallback() {
       try {
-        // Get the code and state from the URL
+        // Get the code from the URL
         const code = searchParams.get('code')
-        const state = searchParams.get('state')
         
         if (!code) {
           setStatus('Error: No authorization code received')
           return
         }
         
-        // Get code verifier from localStorage (fallback method)
-        const codeVerifier = localStorage.getItem('fitbit_code_verifier')
-        
         console.log('Callback received, code:', code.substring(0, 10) + '...')
-        console.log('Code verifier exists in localStorage:', !!codeVerifier)
         
-        // Forward to our API route to complete the flow
-        // Include all necessary parameters
-        const completeUrl = `/api/auth/complete?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}&code_verifier=${encodeURIComponent(codeVerifier || '')}`
+        // Make a direct server request to exchange the code
+        const response = await fetch(`/api/auth/exchange?code=${encodeURIComponent(code)}`)
         
-        setStatus('Completing authentication...')
+        if (!response.ok) {
+          const errorData = await response.json()
+          setStatus(`Authentication error: ${errorData.error || 'Unknown error'}`)
+          return
+        }
         
-        // Redirect to the complete endpoint
-        router.push(completeUrl)
+        // Successful authentication, redirect to dashboard
+        router.push('/dashboard')
       } catch (error) {
         console.error('Error in callback handling:', error)
         setStatus(`Authentication error: ${error.message}`)
