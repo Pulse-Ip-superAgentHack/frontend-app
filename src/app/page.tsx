@@ -1,7 +1,29 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
 export default function Home() {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+  
+  useEffect(() => {
+    // Check if user is already authenticated
+    const isLoggedIn = document.cookie.includes('fitbit_authenticated=true')
+    setIsAuthenticated(isLoggedIn)
+    setCheckingAuth(false)
+    
+    // Optional: If already authenticated, redirect to dashboard
+    if (isLoggedIn) {
+      router.push('/dashboard')
+    }
+  }, [router])
+  
   return (
-    <main>
-      <div className="max-w-4xl mx-auto p-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Fitbit Data Viewer</h1>
         
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -27,7 +49,22 @@ export default function Home() {
             <strong>Your data stays on your device</strong> - we don't store it on any server.
           </p>
         </div>
+        
+        {/* Update the sign-in button based on auth state */}
+        {!checkingAuth && (
+          <div className="mt-8">
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-lime-600 hover:bg-lime-700">
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link href="/api/auth/initiate" className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-lime-600 hover:bg-lime-700">
+                Connect with Fitbit
+              </Link>
+            )}
+          </div>
+        )}
       </div>
-    </main>
+    </div>
   )
 }

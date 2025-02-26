@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getTokens } from '@/utils/tokenStorage'
 import { useRouter } from 'next/navigation'
 
 export default function RawDataPage() {
@@ -9,143 +8,88 @@ export default function RawDataPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchRawData = async () => {
-      try {
-        setLoading(true)
-        
-        // Get the tokens from storage
-        const tokens = getTokens()
-        
-        if (!tokens || !tokens.access_token) {
-          console.error('No access token available')
+  const fetchRawData = async () => {
+    try {
+      setLoading(true)
+      
+      // Instead of direct API calls, use our server API
+      const response = await fetch('/api/fitbit/data')
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Not authenticated, redirecting...')
+          // Redirect to login
+          router.push('/api/auth/initiate')
           return
         }
-        
-        // Fix: Properly format date parameters
-        const today = new Date()
-        const dateStr = today.toISOString().split('T')[0] // Format: YYYY-MM-DD
-        
-        // Use proper date formatting and endpoint structure
-        const activitiesUrl = `https://api.fitbit.com/1/user/-/activities/date/${dateStr}.json`
-        const sleepUrl = `https://api.fitbit.com/1.2/user/-/sleep/date/${dateStr}.json`
-        const stepsUrl = `https://api.fitbit.com/1/user/-/activities/steps/date/${dateStr}/7d.json`
-        
-        // Get user profile to properly identify the user
-        const profileUrl = 'https://api.fitbit.com/1/user/-/profile.json'
-        
-        // Make requests with proper authorization
-        const [profileResponse, activitiesResponse, sleepResponse, stepsResponse] = await Promise.all([
-          fetch(profileUrl, {
-            headers: {
-              'Authorization': `Bearer ${tokens.access_token}`
-            }
-          }),
-          fetch(activitiesUrl, {
-            headers: {
-              'Authorization': `Bearer ${tokens.access_token}`
-            }
-          }),
-          fetch(sleepUrl, {
-            headers: {
-              'Authorization': `Bearer ${tokens.access_token}`
-            }
-          }),
-          fetch(stepsUrl, {
-            headers: {
-              'Authorization': `Bearer ${tokens.access_token}`
-            }
-          })
-        ])
-        
-        // Process the responses
-        const profile = await profileResponse.json()
-        const activities = activitiesResponse.ok ? await activitiesResponse.json() : { error: `API Error: ${activitiesResponse.status}` }
-        const sleep = sleepResponse.ok ? await sleepResponse.json() : { error: `API Error: ${sleepResponse.status}` }
-        const steps = stepsResponse.ok ? await stepsResponse.json() : { error: `API Error: ${stepsResponse.status}` }
-        
-        // Use the actual user ID from the profile
-        const userData = {
-          tokens: {
-            access_token: tokens.access_token.substring(0, 10) + '...',
-            user_id: profile.user?.encodedId || 'unknown'
-          },
-          activities,
-          sleep,
-          'activities-steps': steps
-        }
-        
-        setRawData(userData)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        setRawData({
-          error: String(error)
-        })
-      } finally {
-        setLoading(false)
+        throw new Error(`API request failed with status ${response.status}`)
       }
+      
+      const data = await response.json()
+      console.log('Raw data fetched:', Object.keys(data))
+      setRawData(data)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setRawData({
+        error: String(error)
+      })
+    } finally {
+      setLoading(false)
     }
-    
-    fetchRawData()
-  }, [router])
-  
-  const handleCopyData = () => {
-    navigator.clipboard.writeText(JSON.stringify(rawData, null, 2))
-      .then(() => alert('Data copied to clipboard'))
-      .catch(err => console.error('Failed to copy data:', err))
   }
-  
+
+  useEffect(() => {
+    fetchRawData()
+  }, [])
+
   const handleRefreshData = () => {
     setLoading(true)
     fetchRawData()
   }
-  
-  const handleLogout = () => {
-    localStorage.removeItem('fitbitTokens')
-    localStorage.removeItem('fitbitData')
-    router.push('/')
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading raw data...</div>
-      </div>
-    )
-  }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Fitbit Raw Data</h1>
-          <div className="flex space-x-4">
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-newsreader text-gray-900">Fitbit Raw Data</h1>
+          <div className="flex space-x-3">
             <button 
-              onClick={handleCopyData}
-              className="bg-blue-600 text-white py-2 px-4 rounded"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(rawData, null, 2))
+                alert('Data copied to clipboard!')
+              }}
+              className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+              disabled={loading || !rawData}
             >
               Copy Data
             </button>
             <button 
               onClick={handleRefreshData}
-              className="bg-green-600 text-white py-2 px-4 rounded"
+              className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
+              disabled={loading}
             >
               Refresh Data
             </button>
             <button 
-              onClick={handleLogout}
-              className="bg-red-600 text-white py-2 px-4 rounded"
+              onClick={() => router.push('/api/auth/logout')}
+              className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
             >
               Log Out
             </button>
           </div>
         </div>
         
-        <pre className="bg-gray-900 p-6 rounded-lg overflow-auto max-h-[70vh] text-xs md:text-sm">
-          <code className="text-green-400">
-            {JSON.stringify(rawData, null, 2)}
-          </code>
-        </pre>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-500"></div>
+          </div>
+        ) : (
+          <div className="bg-gray-900 rounded-lg shadow-sm overflow-hidden p-4">
+            <pre className="text-green-400 overflow-auto max-h-[70vh] text-xs md:text-sm">
+              {JSON.stringify(rawData, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   )

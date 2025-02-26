@@ -3,18 +3,37 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getTokens } from '@/utils/tokenStorage'
+import DashboardSkeleton from '@/components/DashboardSkeleton'
 
-export default function DashboardPage() {
+export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
+  
+  useEffect(() => {
+    // Check authentication status
+    const checkAuthStatus = () => {
+      const isLoggedIn = document.cookie.includes('fitbit_authenticated=true')
+      setIsAuthenticated(isLoggedIn)
+      setIsLoading(false)
+      
+      // If not authenticated, redirect to home after a delay
+      if (!isLoggedIn) {
+        setTimeout(() => {
+          router.push('/')
+        }, 2000)
+      }
+    }
+    
+    checkAuthStatus()
+  }, [router])
   
   useEffect(() => {
     // Function to load dashboard data
     const loadDashboardData = async () => {
       try {
-        setLoading(true)
+        setIsLoading(true)
         
         // Get tokens from storage
         const tokens = getTokens()
@@ -71,7 +90,7 @@ export default function DashboardPage() {
         const demoData = await import('@/data/demoDashboardData.json')
         setDashboardData(demoData.default)
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
     
@@ -86,10 +105,20 @@ export default function DashboardPage() {
     router.push('/raw-data')
   }
   
-  if (loading) {
+  if (isLoading) {
+    return <DashboardSkeleton />
+  }
+  
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-500"></div>
+        <div className="bg-white p-8 rounded-lg shadow-sm max-w-md w-full text-center">
+          <h1 className="text-2xl font-newsreader mb-4">Authentication Required</h1>
+          <p className="text-gray-600 mb-6">
+            Please sign in with your Fitbit account to view your dashboard.
+          </p>
+          <div className="animate-pulse">Redirecting to sign in...</div>
+        </div>
       </div>
     )
   }
