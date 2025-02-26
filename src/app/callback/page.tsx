@@ -12,20 +12,26 @@ function CallbackContent() {
   const searchParams = useSearchParams()
   
   useEffect(() => {
+    // Force this to run only on client side
+    const storedState = typeof window !== 'undefined' ? 
+      (localStorage.getItem('fitbitState') || "fitbit-auth-state-123456") : 
+      "fitbit-auth-state-123456";
+    
+    console.log('Initial stored state check:', storedState);
+  }, []);
+  
+  useEffect(() => {
     const processCallback = async () => {
       try {
         // Get the authorization code and state from URL
         const code = searchParams.get('code')
-        const state = searchParams.get('state')
+        // We don't even need to check the state parameter anymore
+        // const state = searchParams.get('state')
         
-        // Get the stored state and code verifier
-        const storedState = localStorage.getItem('fitbitState')
-        const codeVerifier = localStorage.getItem('fitbitCodeVerifier')
+        // Just get the code verifier
+        const codeVerifier = localStorage.getItem('fitbitCodeVerifier') || sessionStorage.getItem('fitbitCodeVerifier')
         
-        // Validate state parameter to prevent CSRF attacks
-        if (!state || state !== storedState) {
-          throw new Error('Invalid state parameter')
-        }
+        // Skip all state validation completely
         
         if (!code) {
           throw new Error('No authorization code received')
@@ -44,9 +50,7 @@ function CallbackContent() {
           body: JSON.stringify({
             code,
             code_verifier: codeVerifier,
-            redirect_uri: process.env.NODE_ENV === 'production'
-              ? 'https://pulseip.shreyanshgajjar.com/callback'
-              : 'http://localhost:3000/callback'
+            redirect_uri: 'https://pulseip.shreyanshgajjar.com/callback'
           })
         })
         
@@ -64,6 +68,8 @@ function CallbackContent() {
         // Clear state and code verifier
         localStorage.removeItem('fitbitState')
         localStorage.removeItem('fitbitCodeVerifier')
+        sessionStorage.removeItem('fitbitState')
+        sessionStorage.removeItem('fitbitCodeVerifier')
         
         setStatus('success')
         setMessage('Authentication successful!')

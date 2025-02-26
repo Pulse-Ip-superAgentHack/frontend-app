@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
       redirectUri: redirect_uri
     })
     
+    console.log('Token exchange starting with code:', code.substring(0, 10) + '...');
+    
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://api.fitbit.com/oauth2/token', {
       method: 'POST',
@@ -55,11 +57,19 @@ export async function POST(request: NextRequest) {
     }
     
     if (!tokenResponse.ok) {
-      console.error('Fitbit token error:', tokenData)
-      return NextResponse.json(
-        { error: tokenData.errors?.[0]?.message || tokenData.error || 'Failed to obtain access token' }, 
-        { status: tokenResponse.status }
-      )
+      console.error('Token exchange failed:', {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: tokenData.error || 'Unknown error',
+        errorDescription: tokenData.error_description || 'No description',
+        rawResponse: responseText.substring(0, 500)
+      })
+      
+      return NextResponse.json({
+        error: tokenData.error || 'Failed to exchange token',
+        error_description: tokenData.error_description || 'No description provided',
+        status: tokenResponse.status
+      }, { status: tokenResponse.status })
     }
     
     // Return tokens to client

@@ -17,3 +17,6 @@ const config: StoryConfig = {
   chainId: "aeneid",
 };
 export const client = StoryClient.newClient(config);
+
+// Placeholder for Story Protocol utilities
+export const placeholder = true;

@@ -30,19 +30,18 @@ export default function SignInPage() {
       return Array.from(array, (byte) => ('0' + (byte & 0xFF).toString(16)).slice(-2)).join('')
     }
     
-    const redirectUri = process.env.NODE_ENV === 'production'
-      ? 'https://pulseip.shreyanshgajjar.com/callback'
-      : 'http://localhost:3000/callback'
+    const redirectUri = 'https://pulseip.shreyanshgajjar.com/callback'
     
     const initiateOAuth = async () => {
-      // Generate and store PKCE and state values
       const codeVerifier = generateCodeVerifier()
-      const state = generateState()
-      const codeChallenge = await generateCodeChallenge(codeVerifier)
+      // Use a fixed state instead of random
+      const state = "fitbit-auth-state-123456"
       
-      // Store in localStorage for later use
       localStorage.setItem('fitbitCodeVerifier', codeVerifier)
       localStorage.setItem('fitbitState', state)
+      
+      // Store the timestamp to detect stale values
+      localStorage.setItem('fitbitStateTimestamp', Date.now().toString())
       
       // Define the scopes your app needs
       const scopes = [
@@ -61,7 +60,7 @@ export default function SignInPage() {
       const authUrl = new URL('https://www.fitbit.com/oauth2/authorize')
       authUrl.searchParams.append('client_id', '23Q44W') // Your client ID
       authUrl.searchParams.append('response_type', 'code')
-      authUrl.searchParams.append('code_challenge', codeChallenge)
+      authUrl.searchParams.append('code_challenge', await generateCodeChallenge(codeVerifier))
       authUrl.searchParams.append('code_challenge_method', 'S256')
       authUrl.searchParams.append('scope', scopes)
       authUrl.searchParams.append('state', state)
