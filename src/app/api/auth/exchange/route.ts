@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No authorization code provided' }, { status: 400 });
     }
     
-    // Exchange code for token
-    const clientId = process.env.FITBIT_CLIENT_ID || '23Q44W';
+    // Use hardcoded client ID for testing (same as in your initiate route)
+    const clientId = '23Q44W';
     const clientSecret = process.env.FITBIT_CLIENT_SECRET;
     
     if (!clientSecret) {
@@ -30,7 +30,13 @@ export async function GET(request: NextRequest) {
     formData.append('code', code);
     formData.append('redirect_uri', 'https://pulseip.shreyanshgajjar.com/callback');
     
-    console.log('Token exchange attempt with code:', code.substring(0, 10) + '...');
+    // Log the request we're about to make
+    console.log('Making token request', {
+      url: tokenUrl,
+      code: code.substring(0, 5) + '...',
+      clientId,
+      hasSecret: !!clientSecret
+    });
     
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
@@ -41,17 +47,36 @@ export async function GET(request: NextRequest) {
       body: formData.toString()
     });
     
-    const tokenData = await tokenResponse.json();
+    const responseText = await tokenResponse.text();
+    console.log('Response status:', tokenResponse.status);
+    console.log('Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
+    console.log('Response body length:', responseText.length);
+    
+    let tokenData;
+    try {
+      tokenData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse response as JSON:', responseText);
+      return NextResponse.json({ 
+        error: 'Invalid response from Fitbit API',
+        status: tokenResponse.status,
+        body: responseText.substring(0, 500) // Show first 500 chars
+      }, { status: 500 });
+    }
     
     if (!tokenResponse.ok) {
       console.error('Token exchange failed:', tokenData);
       return NextResponse.json({ 
         error: `Token exchange failed: ${tokenData.error || 'Unknown error'}`,
-        details: tokenData
-      }, { status: 400 });
+        details: tokenData,
+        status: tokenResponse.status
+      }, { status: tokenResponse.status });
     }
     
-    // Authentication successful - set cookies
+    // If we get here, authentication was successful!
+    console.log('Token exchange successful! Setting cookies...');
+    
+    // Set cookies and return success
     const response = NextResponse.json({ success: true });
     
     // Set tokens in HTTP-only cookies
@@ -69,7 +94,6 @@ export async function GET(request: NextRequest) {
       path: '/'
     });
     
-    // Also set a client-accessible flag that login is complete
     response.cookies.set('fitbit_authenticated', 'true', {
       secure: true,
       maxAge: tokenData.expires_in,
@@ -79,6 +103,9 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Auth exchange error:', error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ 
+      error: String(error),
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 } 
