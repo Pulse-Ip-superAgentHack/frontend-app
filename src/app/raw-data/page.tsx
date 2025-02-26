@@ -13,33 +13,74 @@ export default function RawDataPage() {
     const fetchRawData = async () => {
       try {
         setLoading(true)
+        
+        // Get the tokens from storage
         const tokens = getTokens()
         
-        if (!tokens) {
-          // Redirect to login if no tokens
-          router.push('/auth/signin')
+        if (!tokens || !tokens.access_token) {
+          console.error('No access token available')
           return
         }
         
-        console.log('Fetching raw data with token:', tokens.access_token.substring(0, 10) + '...')
+        // Fix: Properly format date parameters
+        const today = new Date()
+        const dateStr = today.toISOString().split('T')[0] // Format: YYYY-MM-DD
         
-        // Fetch raw data from API
-        const response = await fetch('/api/fitbit/raw', {
-          headers: {
-            Authorization: `Bearer ${tokens.access_token}`
-          }
-        })
+        // Use proper date formatting and endpoint structure
+        const activitiesUrl = `https://api.fitbit.com/1/user/-/activities/date/${dateStr}.json`
+        const sleepUrl = `https://api.fitbit.com/1.2/user/-/sleep/date/${dateStr}.json`
+        const stepsUrl = `https://api.fitbit.com/1/user/-/activities/steps/date/${dateStr}/7d.json`
         
-        if (!response.ok) {
-          console.error('Raw data response not OK:', response.status)
-          throw new Error('Failed to fetch raw data')
+        // Get user profile to properly identify the user
+        const profileUrl = 'https://api.fitbit.com/1/user/-/profile.json'
+        
+        // Make requests with proper authorization
+        const [profileResponse, activitiesResponse, sleepResponse, stepsResponse] = await Promise.all([
+          fetch(profileUrl, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`
+            }
+          }),
+          fetch(activitiesUrl, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`
+            }
+          }),
+          fetch(sleepUrl, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`
+            }
+          }),
+          fetch(stepsUrl, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`
+            }
+          })
+        ])
+        
+        // Process the responses
+        const profile = await profileResponse.json()
+        const activities = activitiesResponse.ok ? await activitiesResponse.json() : { error: `API Error: ${activitiesResponse.status}` }
+        const sleep = sleepResponse.ok ? await sleepResponse.json() : { error: `API Error: ${sleepResponse.status}` }
+        const steps = stepsResponse.ok ? await stepsResponse.json() : { error: `API Error: ${stepsResponse.status}` }
+        
+        // Use the actual user ID from the profile
+        const userData = {
+          tokens: {
+            access_token: tokens.access_token.substring(0, 10) + '...',
+            user_id: profile.user?.encodedId || 'unknown'
+          },
+          activities,
+          sleep,
+          'activities-steps': steps
         }
         
-        const data = await response.json()
-        console.log('Raw data fetched successfully:', Object.keys(data))
-        setRawData(data)
+        setRawData(userData)
       } catch (error) {
-        console.error('Error fetching raw data:', error)
+        console.error('Error fetching data:', error)
+        setRawData({
+          error: String(error)
+        })
       } finally {
         setLoading(false)
       }

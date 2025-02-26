@@ -17,21 +17,23 @@ export const saveTokens = (tokens: TokenData) => {
   window.dispatchEvent(new Event('storage'))
 }
 
-export const getTokens = (): (TokenData & { expiresAt: number }) | null => {
+export const getTokens = () => {
   if (typeof window === 'undefined') {
-    return null;
+    return null
   }
-  
-  const tokensString = localStorage.getItem('fitbitTokens');
-  if (!tokensString) {
-    return null;
+
+  const tokensStr = localStorage.getItem('fitbit_tokens')
+  if (!tokensStr) {
+    // Also check for HTTP-only cookie flag
+    return document.cookie.includes('fitbit_authenticated=true') ? 
+      { access_token: 'stored_in_http_only_cookie' } : null
   }
-  
+
   try {
-    return JSON.parse(tokensString);
-  } catch (error) {
-    console.error('Error parsing tokens', error);
-    return null;
+    return JSON.parse(tokensStr)
+  } catch (e) {
+    console.error('Failed to parse tokens', e)
+    return null
   }
 }
 
