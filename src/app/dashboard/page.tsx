@@ -31,45 +31,39 @@ export default function DashboardPage() {
           })
           
           if (!response.ok) {
-            throw new Error('Failed to fetch dashboard data')
+            console.error(`API request failed with status ${response.status}`);
+            throw new Error('Failed to fetch dashboard data');
           }
           
-          const rawData = await response.json()
+          const rawData = await response.json();
+          console.log('Dashboard data fetched:', Object.keys(rawData));
           
           // Transform raw data into dashboard format
           const transformedData = {
             metrics: {
               temperature: "98.6°F", // Fitbit doesn't provide body temperature
-              heartRate: rawData['activities-heart']?.[0]?.value?.restingHeartRate 
-                ? `${rawData['activities-heart'][0].value.restingHeartRate} bpm` 
-                : "72 bpm",
+              heartRate: getHeartRate(rawData) || "72 bpm",
               oxygenLevel: "98%" // Fitbit doesn't provide oxygen saturation in basic API
             },
             activity: {
-              steps: rawData.activities?.summary?.steps?.toLocaleString() || "5,280",
-              distance: rawData.activities?.summary?.distances?.[0]?.distance 
-                ? `${rawData.activities.summary.distances[0].distance} mi` 
-                : "2.4 mi",
-              calories: rawData.activities?.summary?.caloriesOut?.toLocaleString() || "320",
-              activeMinutes: rawData.activities?.summary?.fairlyActiveMinutes + 
-                rawData.activities?.summary?.veryActiveMinutes || "59"
+              steps: getSteps(rawData) || "5,280",
+              distance: getDistance(rawData) || "2.4 mi",
+              calories: getCalories(rawData) || "320",
+              activeMinutes: getActiveMinutes(rawData) || "35"
             },
             sleep: {
-              hoursSlept: rawData.sleep?.[0]?.minutesAsleep 
-                ? `${(rawData.sleep[0].minutesAsleep / 60).toFixed(1)} hrs` 
-                : "7.5 hrs",
-              deepSleep: rawData.sleep?.[0]?.levels?.summary?.deep?.minutes 
-                ? `${(rawData.sleep[0].levels.summary.deep.minutes / 60).toFixed(1)} hrs` 
-                : "2.3 hrs",
-              score: rawData.sleep?.[0]?.efficiency?.toString() || "82"
+              hoursSlept: getSleepHours(rawData) || "7.5 hrs",
+              deepSleep: getDeepSleep(rawData) || "2.3 hrs",
+              score: getSleepScore(rawData) || "82"
             }
           }
           
           setDashboardData(transformedData)
         } else {
-          // Load demo data if not authenticated
-          const demoData = await import('@/data/demoDashboardData.json')
-          setDashboardData(demoData.default)
+          // Using demo data only for unauthenticated users
+          console.log('Using demo data - user not authenticated');
+          const demoData = await import('@/data/demoDashboardData.json');
+          setDashboardData(demoData.default);
         }
       } catch (error) {
         console.error('Error loading dashboard data:', error)
@@ -104,7 +98,15 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-newsreader">Dashboard</h1>
+          <div>
+            <h1 className="text-4xl font-newsreader">Dashboard</h1>
+            {!isAuthenticated && (
+              <p className="text-sm text-gray-500 mt-1">
+                Viewing demo data. <button onClick={handleSignIn} className="text-lime-600 underline">Sign in</button> to see your real data.
+              </p>
+            )}
+          </div>
+          
           {isAuthenticated && (
             <button 
               onClick={handleViewRawData}
@@ -173,4 +175,109 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+}
+
+// Helper functions to extract data from API response
+function getHeartRate(data) {
+  try {
+    if (data && data['activities-heart'] && Array.isArray(data['activities-heart']) && data['activities-heart'].length > 0) {
+      const hr = data['activities-heart'][0]?.value?.restingHeartRate;
+      return hr ? `${hr} bpm` : null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting heart rate:", e);
+    return null;
+  }
+}
+
+function getSteps(data) {
+  try {
+    if (data.activities && data.activities.summary) {
+      const steps = data.activities.summary.steps;
+      return steps ? steps.toLocaleString() : null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting steps:", e);
+    return null;
+  }
+}
+
+function getDistance(data) {
+  try {
+    if (data.activities && data.activities.summary && data.activities.summary.distances) {
+      const distance = data.activities.summary.distances.find(d => d.activity === "total");
+      return distance ? `${distance.distance.toFixed(1)} mi` : null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting distance:", e);
+    return null;
+  }
+}
+
+function getCalories(data) {
+  try {
+    if (data.activities && data.activities.summary) {
+      const calories = data.activities.summary.caloriesOut;
+      return calories ? calories.toLocaleString() : null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting calories:", e);
+    return null;
+  }
+}
+
+function getActiveMinutes(data) {
+  try {
+    if (data.activities && data.activities.summary) {
+      const fairlyActive = data.activities.summary.fairlyActiveMinutes || 0;
+      const veryActive = data.activities.summary.veryActiveMinutes || 0;
+      return (fairlyActive + veryActive).toString();
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting active minutes:", e);
+    return null;
+  }
+}
+
+function getSleepHours(data) {
+  try {
+    if (data.sleep && data.sleep.summary) {
+      const minutes = data.sleep.summary.totalMinutesAsleep;
+      return minutes ? `${(minutes / 60).toFixed(1)} hrs` : null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting sleep hours:", e);
+    return null;
+  }
+}
+
+function getDeepSleep(data) {
+  try {
+    if (data.sleep && data.sleep.summary && data.sleep.summary.stages) {
+      const deep = data.sleep.summary.stages.deep;
+      return deep ? `${(deep / 60).toFixed(1)} hrs` : null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting deep sleep:", e);
+    return null;
+  }
+}
+
+function getSleepScore(data) {
+  try {
+    if (data.sleep && data.sleep.summary) {
+      return data.sleep.summary.efficiency?.toString() || null;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error extracting sleep score:", e);
+    return null;
+  }
 } 

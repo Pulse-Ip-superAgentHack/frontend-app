@@ -21,6 +21,8 @@ export default function RawDataPage() {
           return
         }
         
+        console.log('Fetching raw data with token:', tokens.access_token.substring(0, 10) + '...')
+        
         // Fetch raw data from API
         const response = await fetch('/api/fitbit/raw', {
           headers: {
@@ -29,10 +31,12 @@ export default function RawDataPage() {
         })
         
         if (!response.ok) {
+          console.error('Raw data response not OK:', response.status)
           throw new Error('Failed to fetch raw data')
         }
         
         const data = await response.json()
+        console.log('Raw data fetched successfully:', Object.keys(data))
         setRawData(data)
       } catch (error) {
         console.error('Error fetching raw data:', error)
