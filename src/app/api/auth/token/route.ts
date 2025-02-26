@@ -8,28 +8,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
     
+    // Get client secret from environment variable
+    const clientId = process.env.FITBIT_CLIENT_ID || '23Q44W'
+    const clientSecret = process.env.FITBIT_CLIENT_SECRET || '' // Add this to your .env file
+    
+    // Basic auth for Fitbit token endpoint
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+    
     // Prepare form data for Fitbit token endpoint
     const formData = new URLSearchParams()
-    formData.append('client_id', '23Q44W') // Your client ID
+    formData.append('client_id', clientId)
     formData.append('grant_type', 'authorization_code')
     formData.append('code', code)
     formData.append('code_verifier', code_verifier)
     formData.append('redirect_uri', redirect_uri)
     
+    console.log('Token request data:', {
+      clientId,
+      hasClientSecret: !!clientSecret,
+      code: code.substring(0, 10) + '...',
+      codeVerifier: code_verifier.substring(0, 10) + '...',
+      redirectUri: redirect_uri
+    })
+    
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://api.fitbit.com/oauth2/token', {
       method: 'POST',
       headers: {
+        'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: formData.toString()
     })
     
-    const tokenData = await tokenResponse.json()
+    // Log the entire response for debugging
+    const responseText = await tokenResponse.text()
+    console.log('Token response status:', tokenResponse.status)
+    
+    let tokenData
+    try {
+      tokenData = JSON.parse(responseText)
+      console.log('Token response:', tokenData.error || 'Success')
+    } catch (e) {
+      console.error('Failed to parse token response:', responseText)
+      return NextResponse.json({ error: 'Invalid response from Fitbit' }, { status: 500 })
+    }
     
     if (!tokenResponse.ok) {
       console.error('Fitbit token error:', tokenData)
-      return NextResponse.json({ error: tokenData.errors?.[0]?.message || 'Failed to obtain access token' }, { status: tokenResponse.status })
+      return NextResponse.json(
+        { error: tokenData.errors?.[0]?.message || tokenData.error || 'Failed to obtain access token' }, 
+        { status: tokenResponse.status }
+      )
     }
     
     // Return tokens to client

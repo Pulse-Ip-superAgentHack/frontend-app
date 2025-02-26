@@ -30,6 +30,10 @@ export default function SignInPage() {
       return Array.from(array, (byte) => ('0' + (byte & 0xFF).toString(16)).slice(-2)).join('')
     }
     
+    const redirectUri = process.env.NODE_ENV === 'production'
+      ? 'https://pulseip.shreyanshgajjar.com/callback'
+      : 'http://localhost:3000/callback'
+    
     const initiateOAuth = async () => {
       // Generate and store PKCE and state values
       const codeVerifier = generateCodeVerifier()
@@ -61,7 +65,7 @@ export default function SignInPage() {
       authUrl.searchParams.append('code_challenge_method', 'S256')
       authUrl.searchParams.append('scope', scopes)
       authUrl.searchParams.append('state', state)
-      authUrl.searchParams.append('redirect_uri', 'https://pulseip.shreyanshgajjar.com/callback')
+      authUrl.searchParams.append('redirect_uri', redirectUri)
       
       // Redirect to Fitbit authorization page
       window.location.href = authUrl.toString()

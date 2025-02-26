@@ -44,13 +44,16 @@ function CallbackContent() {
           body: JSON.stringify({
             code,
             code_verifier: codeVerifier,
-            redirect_uri: 'https://pulseip.shreyanshgajjar.com/callback'
+            redirect_uri: process.env.NODE_ENV === 'production'
+              ? 'https://pulseip.shreyanshgajjar.com/callback'
+              : 'http://localhost:3000/callback'
           })
         })
         
         if (!tokenResponse.ok) {
-          const error = await tokenResponse.json()
-          throw new Error(error.message || 'Failed to exchange authorization code for tokens')
+          const errorData = await tokenResponse.json()
+          console.error('Token exchange failed:', errorData)
+          throw new Error(errorData.error || 'Failed to exchange authorization code for tokens')
         }
         
         const tokens = await tokenResponse.json()
