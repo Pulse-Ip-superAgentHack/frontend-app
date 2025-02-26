@@ -99,7 +99,7 @@ const Navbar = () => {
                 onClick={handleSignup}
                 className="bg-white text-black px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
               >
-                Get New Data
+                Log in
               </button>
             )}
           </div>

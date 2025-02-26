@@ -2,6 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    font-family: var(--font-newsreader), serif;
+  }
+  
+  body {
+    @apply bg-gray-50;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-gray-900;
+  }
+  
+  p, span, div {
+    @apply text-gray-800;
+  }
+  
+  .text-gray-500 {
+    @apply text-gray-600;
+  }
+  
+  /* Forcefully apply inter to all numeric elements */
+  [class*="Temperature"] > :last-child,
+  [class*="Oxygen"] > :last-child,
+  [class*="Pulse"] > :last-child,
+  .Steps h2,
+  .Sleep h2,
+  .Activity h2,
+  [class*="steps"] h2,
+  [class*="sleep"] h2,
+  [class*="activity"] h2,
+  .metrics-value,
+  .dashboard-number,
+  .text-4xl, .text-5xl, .text-6xl, 
+  .text-3xl, .text-2xl, .text-xl {
+    font-family: var(--font-inter) !important;
+  }
+  
+  /* Direct targeting of the metric card numbers */
+  #dashboard .metric-card h2,
+  div[class*="Temperature"] h2,
+  div[class*="Oxygen"] h2, 
+  div[class*="Pulse"] h2,
+  div[class*="Steps"] h2,
+  div[class*="Sleep"] h2,
+  div[class*="Activity"] h2 {
+    font-family: var(--font-inter) !important;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -17,5 +67,162 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Add this class for dashboard numbers */
+.dashboard-number {
+  font-family: var(--font-inter);
+  font-weight: 500;
+}
+
+/* You can add more specific numeric classes if needed */
+.metric-value {
+  font-family: var(--font-inter);
+  font-weight: 600;
+}
+
+/* Make more specific and stronger selectors for the numbers */
+.dashboard-number,
+[class*="Temperature"] span:last-child,
+[class*="Oxygen"] span:last-child,
+[class*="Pulse"] span:last-child,
+.metric-value,
+.Steps span,
+.Sleep span,
+.Activity span {
+  font-family: var(--font-inter) !important;
+  font-weight: 500 !important;
+}
+
+/* Target the large numbers specifically */
+span:has(+ span:contains("°")),
+span:has(+ span:contains("%")),
+span:has(+ span:contains("bpm")),
+span.dashboard-number,
+div.Steps h2,
+div.Sleep h2,
+div.Activity h2,
+div[class*="steps"] h2,
+div[class*="sleep"] h2,
+div[class*="activity"] h2,
+.metric-label + .metric-value {
+  font-family: var(--font-inter) !important;
+  font-weight: 600 !important;
+}
+
+/* Specifically target the big numbers shown in your screenshot */
+h2, .text-4xl, .text-3xl, .text-2xl {
+  font-family: var(--font-inter) !important;
+}
+
+/* Additional override outside of layers */
+.numeric, .number, 
+[class*="temperature"] span:last-child, 
+[class*="oxygen"] span:last-child, 
+[class*="pulse"] span:last-child,
+[class*="steps"] span:first-child,
+[class*="sleep"] span:first-child,
+[class*="activity"] span:first-child {
+  font-family: var(--font-inter) !important;
+  font-weight: 500 !important;
+}
+
+/* Directly target the large numbers in your screenshot */
+[class*="card"] h2,
+[class*="card"] .text-xl,
+[class*="card"] .text-2xl,
+[class*="card"] .text-3xl,
+[class*="card"] .text-4xl,
+[class*="card"] .text-5xl {
+  font-family: var(--font-inter) !important;
+}
+
+/* Add this to globals.css - extremely specific numeric selectors */
+h2[class*="numeric"],
+span[class*="numeric"],
+div[class*="numeric"],
+.numeric-value,
+.dashboard-value,
+.metric-value,
+[class*="temperature"] span,
+[class*="oxygen"] span,
+[class*="pulse"] span,
+[class*="steps"] span,
+[class*="sleep"] span,
+[class*="activity"] span,
+[class*="card"] span {
+  font-family: var(--font-inter) !important;
+  font-weight: 500 !important;
+}
+
+/* Target the dashboard numbers and headings */
+.dashboard h2,
+.dashboard span,
+[class*="dashboard"] h2,
+[class*="dashboard"] span {
+  font-family: var(--font-inter) !important;
+}
+
+/* Target the date in the navbar */
+.date-display span,
+[class*="date"] span {
+  font-family: var(--font-inter) !important;
+}
+
+/* Target date picker specifically */
+[role="button"]:has(svg[class*="calendar"]),
+button:has(svg[class*="calendar"]),
+div:has(> svg[class*="calendar"]),
+button:has(span:contains("Sep")),
+div.calendar-container,
+.date-range,
+.date-picker {
+  font-family: var(--font-inter) !important;
+  font-weight: 400 !important;
+}
+
+/* Target Sep 02 - Sep 09 format specifically */
+div:has(> span:contains("-")):has(span:contains("Sep")),
+span:contains("Sep 02 - Sep 09"),
+[class*="date-range"] *,
+button:contains("Sep") span,
+div:contains("Sep") span {
+  font-family: var(--font-inter) !important;
+}
+
+/* Target the entire date picker component and all its children */
+[class*="dashboard"] [class*="header"] [class*="date"] *,
+[class*="dashboard"] [class*="header"] [class*="calendar"] * {
+  font-family: var(--font-inter) !important;
+}
+
+/* Target both date displays */
+.date-picker,
+.date-picker span,
+.date-range,
+.date-range span,
+[class*="date-range"],
+span:has(+ span:contains("-")):has(span:contains("Sep")),
+.dashboard-date {
+  font-family: var(--font-inter) !important;
+}
+
+/* Target date numbers specifically wherever they appear - Fixing syntax error */
+/* Remove the problematic line with regex and replace with simpler alternatives */
+/* span:has(text:matches(/\d{1,2}/)), <- This line causes the error */ 
+.date-number,
+[class*="date"] span,
+span:contains("Sep"),
+span:contains("Oct"),
+span:contains("Nov"),
+span:contains("Dec"),
+span:contains("Jan"),
+span:contains("Feb"),
+span:contains("Mar"),
+span:contains("Apr"),
+span:contains("May"),
+span:contains("Jun"),
+span:contains("Jul"),
+span:contains("Aug") {
+  font-family: var(--font-inter) !important;
 }

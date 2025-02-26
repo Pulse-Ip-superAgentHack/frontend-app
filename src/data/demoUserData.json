@@ -1,0 +1,41 @@
+{
+  "id": "user123",
+  "name": "Alex Johnson",
+  "email": "alex@example.com",
+  "avatar": null,
+  "memberSince": "Jan 2023",
+  "lastSync": "2 hours ago",
+  "devices": [
+    {
+      "id": "device1",
+      "name": "Fitbit Charge 5",
+      "type": "tracker",
+      "lastSync": "2 hours ago",
+      "batteryLevel": "72%"
+    }
+  ],
+  "subscription": {
+    "plan": "Premium Health",
+    "status": "active",
+    "nextBilling": "Oct 15, 2023"
+  },
+  "connections": [
+    {
+      "id": "conn1",
+      "name": "Google Fit",
+      "status": "connected",
+      "lastSync": "3 days ago"
+    },
+    {
+      "id": "conn2",
+      "name": "MyFitnessPal",
+      "status": "connected",
+      "lastSync": "1 week ago"
+    }
+  ],
+  "permissions": {
+    "shareWithDoctors": true,
+    "dataForResearch": false,
+    "personalizedInsights": true
+  }
+} 

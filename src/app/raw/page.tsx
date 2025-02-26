@@ -10,6 +10,7 @@ function RawContent() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [manualCode, setManualCode] = useState('')
+  const [copySuccess, setCopySuccess] = useState<boolean | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
   const code = searchParams.get('code')
@@ -182,7 +183,28 @@ function RawContent() {
       
       {data && (
         <>
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end mb-4 gap-2">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+                  .then(() => {
+                    setCopySuccess(true)
+                    setTimeout(() => setCopySuccess(null), 2000)
+                  })
+                  .catch(err => {
+                    console.error('Failed to copy: ', err)
+                    setCopySuccess(false)
+                    setTimeout(() => setCopySuccess(null), 2000)
+                  })
+              }}
+              className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
+              disabled={loading}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              Copy Data
+            </button>
             <button
               onClick={handleRefreshData}
               className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors"
@@ -192,10 +214,24 @@ function RawContent() {
             </button>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-            <pre className="text-xs">{JSON.stringify(data, null, 2)}</pre>
+          <div className="bg-gray-900 p-6 rounded-lg shadow-md overflow-x-auto">
+            <pre className="text-sm text-white font-mono whitespace-pre-wrap">
+              {JSON.stringify(data, null, 2)
+                .replace(/"([^"]+)":/g, '<span class="text-yellow-400">"$1"</span>:')
+                .replace(/: ("[^"]+")/g, ': <span class="text-green-400">$1</span>')
+                .replace(/: (true|false)/g, ': <span class="text-blue-400">$1</span>')
+                .replace(/: (\d+)/g, ': <span class="text-purple-400">$1</span>')}
+            </pre>
           </div>
         </>
+      )}
+      
+      {copySuccess !== null && (
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-md ${
+          copySuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {copySuccess ? 'Data copied to clipboard!' : 'Failed to copy data'}
+        </div>
       )}
     </div>
   )
