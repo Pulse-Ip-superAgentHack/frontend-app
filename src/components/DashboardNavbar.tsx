@@ -1,13 +1,14 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { getTokens } from '@/utils/tokenStorage'
-import { motion, AnimatePresence } from 'framer-motion'
+import { getTokens, removeTokens } from '@/utils/tokenStorage'
 
 const DashboardNavbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   
   // Format current date: e.g., "Wed, Feb 26"
@@ -15,9 +16,29 @@ const DashboardNavbar = () => {
   const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }
   const formattedDate = today.toLocaleDateString('en-US', dateOptions)
 
+  useEffect(() => {
+    // Check authentication status
+    const tokens = getTokens()
+    setIsAuthenticated(!!tokens)
+    
+    // Listen for storage events (for multi-tab support)
+    const handleStorageChange = () => {
+      const tokens = getTokens()
+      setIsAuthenticated(!!tokens)
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  const handleLogin = () => {
+    router.push('/auth/signin')
+  }
+
   const handleLogout = () => {
-    localStorage.removeItem('fitbitTokens')
+    removeTokens()
     localStorage.removeItem('fitbitData')
+    setIsAuthenticated(false)
     router.push('/')
   }
 
@@ -31,14 +52,14 @@ const DashboardNavbar = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link href="/demo-dashboard" className="flex items-center">
+          <Link href="/dashboard" className="flex items-center">
             <div className="rounded-full p-3 flex items-center shadow-sm">
               <span className="font-inter font-bold text-gray-900">Pulse <span className="text-lime-600">IP</span></span>
             </div>
           </Link>
         </motion.div>
         
-        {/* Right section - Date & icons */}
+        {/* Right section - Date & buttons */}
         <div className="flex items-center space-x-4">
           <motion.div 
             className="hidden md:flex items-center space-x-4"
@@ -55,7 +76,24 @@ const DashboardNavbar = () => {
             </div>
           </motion.div>
           
-          {/* Marketplace icon - Updated SVG */}
+          {/* Authentication button */}
+          {isAuthenticated ? (
+            <button 
+              onClick={handleLogout}
+              className="rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors px-4 py-2 text-sm"
+            >
+              Log Out
+            </button>
+          ) : (
+            <button 
+              onClick={handleLogin}
+              className="rounded-full bg-lime-600 text-white hover:bg-lime-700 transition-colors px-4 py-2 text-sm"
+            >
+              Sign In
+            </button>
+          )}
+          
+          {/* Marketplace icon */}
           <Link href="/marketplace" className="rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center h-8 w-8">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
@@ -67,7 +105,7 @@ const DashboardNavbar = () => {
             </svg>
           </Link>
           
-          {/* User account icon - Navigate to dashboard instead of account */}
+          {/* User account icon - Navigate to dashboard */}
           <Link href="/dashboard" className="rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center justify-center h-8 w-8">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
@@ -86,44 +124,39 @@ const DashboardNavbar = () => {
       </div>
       
       {/* Mobile dropdown menu */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            className="md:hidden absolute right-4 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-50"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+      {isMenuOpen && (
+        <motion.div 
+          className="md:hidden absolute right-4 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-50"
+        >
+          <Link 
+            href="/demo-dashboard" 
+            className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+            onClick={() => setIsMenuOpen(false)}
           >
-            <Link 
-              href="/demo-dashboard" 
-              className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link 
-              href="/raw" 
-              className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              View Raw Data
-            </Link>
-            <Link 
-              href="/account" 
-              className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Account
-            </Link>
-            <button 
-              onClick={handleLogout}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-            >
-              Logout
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Dashboard
+          </Link>
+          <Link 
+            href="/raw" 
+            className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            View Raw Data
+          </Link>
+          <Link 
+            href="/account" 
+            className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Account
+          </Link>
+          <button 
+            onClick={handleLogout}
+            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+          >
+            Logout
+          </button>
+        </motion.div>
+      )}
     </nav>
   )
 }

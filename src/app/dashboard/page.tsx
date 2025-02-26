@@ -2,49 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
 import { getTokens } from '@/utils/tokenStorage'
 
-// Remove or use FitbitData
-// You can comment it out if not using
-// import { FitbitData } from '@/types/fitbit'
-
-// Or define proper types to use it
-interface FitbitData {
-  profile?: {
-    user: {
-      fullName: string
-      age: number
-      height: number
-      weight: number
-      averageDailySteps: number
-    }
-  }
-  activities?: {
-    summary: {
-      steps: number
-      calories: number
-      distance: number
-      activeMinutes: number
-    }
-  }
-  sleep?: {
-    summary: {
-      totalMinutesAsleep: number
-      totalTimeInBed: number
-    }
-  }
-  heartRate?: {
-    'activities-heart': Array<{
-      value: {
-        restingHeartRate: number
-      }
-    }>
-  }
-}
-
 export default function DashboardPage() {
-  const [dashboardData, setDashboardData] = useState(null)
+  const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
@@ -63,7 +24,7 @@ export default function DashboardPage() {
           setIsAuthenticated(true)
           
           // Fetch real dashboard data from API
-          const response = await fetch('/api/dashboard', {
+          const response = await fetch('/api/fitbit/raw', {
             headers: {
               Authorization: `Bearer ${tokens.access_token}`
             }
@@ -73,8 +34,38 @@ export default function DashboardPage() {
             throw new Error('Failed to fetch dashboard data')
           }
           
-          const data = await response.json()
-          setDashboardData(data)
+          const rawData = await response.json()
+          
+          // Transform raw data into dashboard format
+          const transformedData = {
+            metrics: {
+              temperature: "98.6°F", // Fitbit doesn't provide body temperature
+              heartRate: rawData['activities-heart']?.[0]?.value?.restingHeartRate 
+                ? `${rawData['activities-heart'][0].value.restingHeartRate} bpm` 
+                : "72 bpm",
+              oxygenLevel: "98%" // Fitbit doesn't provide oxygen saturation in basic API
+            },
+            activity: {
+              steps: rawData.activities?.summary?.steps?.toLocaleString() || "5,280",
+              distance: rawData.activities?.summary?.distances?.[0]?.distance 
+                ? `${rawData.activities.summary.distances[0].distance} mi` 
+                : "2.4 mi",
+              calories: rawData.activities?.summary?.caloriesOut?.toLocaleString() || "320",
+              activeMinutes: rawData.activities?.summary?.fairlyActiveMinutes + 
+                rawData.activities?.summary?.veryActiveMinutes || "59"
+            },
+            sleep: {
+              hoursSlept: rawData.sleep?.[0]?.minutesAsleep 
+                ? `${(rawData.sleep[0].minutesAsleep / 60).toFixed(1)} hrs` 
+                : "7.5 hrs",
+              deepSleep: rawData.sleep?.[0]?.levels?.summary?.deep?.minutes 
+                ? `${(rawData.sleep[0].levels.summary.deep.minutes / 60).toFixed(1)} hrs` 
+                : "2.3 hrs",
+              score: rawData.sleep?.[0]?.efficiency?.toString() || "82"
+            }
+          }
+          
+          setDashboardData(transformedData)
         } else {
           // Load demo data if not authenticated
           const demoData = await import('@/data/demoDashboardData.json')
@@ -104,91 +95,78 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-500"></div>
       </div>
     )
   }
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-newsreader">Dashboard</h1>
-          <div className="flex space-x-4">
-            {!isAuthenticated ? (
-              <button 
-                onClick={handleSignIn}
-                className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
-              >
-                Sign In
-              </button>
-            ) : (
-              <button 
-                onClick={handleViewRawData}
-                className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
-              >
-                View Raw Data
-              </button>
-            )}
-          </div>
+          {isAuthenticated && (
+            <button 
+              onClick={handleViewRawData}
+              className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
+            >
+              View Raw Data
+            </button>
+          )}
+          {!isAuthenticated && (
+            <button 
+              onClick={handleSignIn}
+              className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
+            >
+              Sign In
+            </button>
+          )}
         </div>
         
-        {/* Dashboard Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Dashboard Content - Matching Demo Dashboard UI */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Health Metrics */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg mb-3">Health Metrics</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500">Temperature</p>
-                <p className="text-2xl font-inter">{dashboardData?.metrics?.temperature || "98.6°F"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Heart Rate</p>
-                <p className="text-2xl font-inter">{dashboardData?.metrics?.heartRate || "72 bpm"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Oxygen Level</p>
-                <p className="text-2xl font-inter">{dashboardData?.metrics?.oxygenLevel || "98%"}</p>
-              </div>
+            <h3 className="text-lg mb-4 font-medium">Health Metrics</h3>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Temperature</p>
+              <p className="text-xl font-inter mb-4">{dashboardData?.metrics?.temperature}</p>
+              
+              <p className="text-sm text-gray-500 mb-1">Heart Rate</p>
+              <p className="text-xl font-inter mb-4">{dashboardData?.metrics?.heartRate}</p>
+              
+              <p className="text-sm text-gray-500 mb-1">Oxygen Level</p>
+              <p className="text-xl font-inter">{dashboardData?.metrics?.oxygenLevel}</p>
             </div>
           </div>
           
           {/* Activity Summary */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg mb-3">Activity Summary</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500">Steps Today</p>
-                <p className="text-2xl font-inter">{dashboardData?.activity?.steps || "5,280"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Distance</p>
-                <p className="text-2xl font-inter">{dashboardData?.activity?.distance || "2.4 mi"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Calories Burned</p>
-                <p className="text-2xl font-inter">{dashboardData?.activity?.calories || "320"}</p>
-              </div>
+            <h3 className="text-lg mb-4 font-medium">Activity Summary</h3>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Steps Today</p>
+              <p className="text-xl font-inter mb-4">{dashboardData?.activity?.steps}</p>
+              
+              <p className="text-sm text-gray-500 mb-1">Distance</p>
+              <p className="text-xl font-inter mb-4">{dashboardData?.activity?.distance}</p>
+              
+              <p className="text-sm text-gray-500 mb-1">Calories Burned</p>
+              <p className="text-xl font-inter">{dashboardData?.activity?.calories}</p>
             </div>
           </div>
           
           {/* Sleep Data */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg mb-3">Sleep Data</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500">Hours Slept</p>
-                <p className="text-2xl font-inter">{dashboardData?.sleep?.hoursSlept || "7.5 hrs"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Deep Sleep</p>
-                <p className="text-2xl font-inter">{dashboardData?.sleep?.deepSleep || "2.3 hrs"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Sleep Score</p>
-                <p className="text-2xl font-inter">{dashboardData?.sleep?.score || "82"}</p>
-              </div>
+            <h3 className="text-lg mb-4 font-medium">Sleep Data</h3>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Hours Slept</p>
+              <p className="text-xl font-inter mb-4">{dashboardData?.sleep?.hoursSlept}</p>
+              
+              <p className="text-sm text-gray-500 mb-1">Deep Sleep</p>
+              <p className="text-xl font-inter mb-4">{dashboardData?.sleep?.deepSleep}</p>
+              
+              <p className="text-sm text-gray-500 mb-1">Sleep Score</p>
+              <p className="text-xl font-inter">{dashboardData?.sleep?.score}</p>
             </div>
           </div>
         </div>
