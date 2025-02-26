@@ -5,36 +5,50 @@ const SESSION_STORE = new Map();
 
 export async function GET(request: NextRequest) {
   try {
-    // Get session ID from cookie
-    const sessionId = request.cookies.get('fitbit_auth_session')?.value;
-    if (!sessionId) {
-      return NextResponse.redirect('/auth/error?reason=no_session');
-    }
-    
-    // Get session data
-    const session = SESSION_STORE.get(sessionId);
-    if (!session) {
-      return NextResponse.redirect('/auth/error?reason=session_expired');
-    }
-    
-    // Check if session expired
-    if (session.expires < Date.now()) {
-      SESSION_STORE.delete(sessionId);
-      return NextResponse.redirect('/auth/error?reason=session_expired');
-    }
-    
-    // Get authorization code and state from URL
+    // Parse URL params
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
+    const clientVerifier = url.searchParams.get('code_verifier'); // From client-side
     
-    // Validate state to prevent CSRF
-    if (!state || state !== session.state) {
-      return NextResponse.redirect('/auth/error?reason=invalid_state');
+    // Get session ID from cookie
+    const sessionId = request.cookies.get('fitbit_auth_session')?.value;
+    
+    // Get code verifier from cookie (fallback)
+    const cookieVerifier = request.cookies.get('fitbit_code_verifier_fallback')?.value;
+    
+    // Try to get the session
+    let session = null;
+    let codeVerifier = null;
+    
+    if (sessionId) {
+      session = SESSION_STORE.get(sessionId);
+      if (session && session.expires > Date.now()) {
+        codeVerifier = session.codeVerifier;
+        console.log('Using session-based code verifier');
+      } else {
+        console.log('Session expired or not found');
+      }
     }
     
+    // If no session-based verifier, use client-provided one or cookie
+    if (!codeVerifier) {
+      if (clientVerifier) {
+        codeVerifier = clientVerifier;
+        console.log('Using client-provided code verifier');
+      } else if (cookieVerifier) {
+        codeVerifier = cookieVerifier;
+        console.log('Using cookie-based code verifier');
+      }
+    }
+    
+    // Validate we have a code and verifier
     if (!code) {
       return NextResponse.redirect('/auth/error?reason=no_code');
+    }
+    
+    if (!codeVerifier) {
+      return NextResponse.redirect('/auth/error?reason=no_verifier');
     }
     
     // Exchange code for token
@@ -55,8 +69,14 @@ export async function GET(request: NextRequest) {
     formData.append('client_id', clientId);
     formData.append('grant_type', 'authorization_code');
     formData.append('code', code);
-    formData.append('code_verifier', session.codeVerifier);
+    formData.append('code_verifier', codeVerifier);
     formData.append('redirect_uri', 'https://pulseip.shreyanshgajjar.com/callback');
+    
+    console.log('Token request params:', {
+      code: code.substring(0, 10) + '...',
+      verifier_length: codeVerifier.length,
+      client_id: clientId
+    });
     
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
@@ -75,7 +95,9 @@ export async function GET(request: NextRequest) {
     }
     
     // Clear session
-    SESSION_STORE.delete(sessionId);
+    if (sessionId) {
+      SESSION_STORE.delete(sessionId);
+    }
     
     // Redirect to success page with token data in encrypted cookie
     const response = NextResponse.redirect('/auth/success');
@@ -101,6 +123,9 @@ export async function GET(request: NextRequest) {
       maxAge: tokenData.expires_in,
       path: '/'
     });
+    
+    // Add script to clear localStorage verification data
+    response.cookies.delete('fitbit_code_verifier_fallback');
     
     return response;
   } catch (error) {

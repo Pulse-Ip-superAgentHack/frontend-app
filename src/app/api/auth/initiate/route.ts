@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
 
-// Create a server-side session store
-// In production, use a real session store like Redis or database
+// Create a server-side session store (not reliable in serverless environments)
 const SESSION_STORE = new Map();
 
 export async function GET(request: NextRequest) {
@@ -53,6 +52,8 @@ export async function GET(request: NextRequest) {
     
     // Set cookie with session ID
     const response = NextResponse.redirect(authUrl);
+    
+    // 1. Set the session ID cookie (server-side)
     response.cookies.set('fitbit_auth_session', sessionId, {
       httpOnly: true,
       secure: true,
@@ -60,7 +61,38 @@ export async function GET(request: NextRequest) {
       path: '/'
     });
     
-    return response;
+    // 2. Also set code verifier in a non-HTTP-only cookie as fallback
+    response.cookies.set('fitbit_code_verifier_fallback', codeVerifier, {
+      httpOnly: false,
+      secure: true,
+      maxAge: 60 * 10, // 10 minutes
+      path: '/'
+    });
+    
+    // 3. Add script to store code verifier in localStorage
+    const script = `
+      <html>
+        <head>
+          <title>Redirecting to Fitbit...</title>
+          <script>
+            // Store code verifier in localStorage as another fallback
+            localStorage.setItem('fitbit_code_verifier', '${codeVerifier}');
+            localStorage.setItem('fitbit_auth_state', '${state}');
+            // Redirect to Fitbit auth URL
+            window.location.href = "${authUrl.toString()}";
+          </script>
+        </head>
+        <body>
+          <p>Redirecting to Fitbit authorization page...</p>
+        </body>
+      </html>
+    `;
+    
+    return new NextResponse(script, {
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
   } catch (error) {
     console.error('Failed to initiate OAuth:', error);
     return NextResponse.json({ error: 'Failed to initiate OAuth' }, { status: 500 });

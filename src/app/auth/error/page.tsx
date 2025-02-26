@@ -1,64 +1,85 @@
 'use client'
 
-import { Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-// The error component that uses searchParams
+// Component that uses searchParams (needs Suspense)
 function ErrorContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const reason = searchParams.get('reason') || 'unknown'
-  const message = searchParams.get('message') || ''
-  
-  let errorTitle = 'Authentication Failed'
-  let errorDescription = 'An error occurred during authentication.'
-  
-  switch(reason) {
-    case 'no_session':
-      errorDescription = 'Authentication session not found. Please try again.'
-      break
-    case 'session_expired':
-      errorDescription = 'Authentication session expired. Please try again.'
-      break
-    case 'invalid_state':
-      errorDescription = 'Invalid state parameter. This could be a security issue.'
-      break
-    case 'no_code':
-      errorDescription = 'No authorization code received from Fitbit.'
-      break
-    case 'token_error':
-      errorDescription = `Failed to exchange code for token: ${message}`
-      break
-    case 'missing_secret':
-      errorDescription = 'Server configuration error: Missing client secret.'
-      break
-    default:
-      errorDescription = 'An unknown error occurred.'
+  const [reason, setReason] = useState('')
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    const reasonParam = searchParams.get('reason') || 'unknown_error'
+    const messageParam = searchParams.get('message') || ''
+    
+    setReason(reasonParam)
+    setMessage(messageParam)
+    
+    // Log additional info for debugging
+    console.error('Auth error:', { reason: reasonParam, message: messageParam })
+    
+    // If code verifier issue, log localStorage values
+    if (reasonParam === 'no_verifier') {
+      const hasVerifier = !!localStorage.getItem('fitbit_code_verifier')
+      console.log('LocalStorage verifier exists:', hasVerifier)
+    }
+  }, [searchParams])
+
+  // Human readable error messages
+  const getErrorMessage = () => {
+    switch (reason) {
+      case 'no_session':
+        return 'No authentication session was found. Please try again.'
+      case 'session_expired': 
+        return 'Your authentication session has expired. Please try again.'
+      case 'invalid_state':
+        return 'Invalid state parameter. This could be a security issue.'
+      case 'no_code':
+        return 'No authorization code was received from Fitbit.'
+      case 'no_verifier':
+        return 'Code verifier not found. This is required for secure authentication.'
+      case 'token_error':
+        return `Token exchange failed: ${message || 'Unknown error'}`
+      case 'missing_secret':
+        return 'Application configuration error. Please contact support.'
+      case 'server_error':
+        return 'A server error occurred during authentication.'
+      default:
+        return 'An unknown error occurred during authentication.'
+    }
   }
-  
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-sm max-w-md w-full text-center">
-        <h1 className="text-2xl font-newsreader mb-4 text-red-600">{errorTitle}</h1>
-        <p className="text-gray-600 mb-6">{errorDescription}</p>
-        <div className="text-center text-red-600 mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
+        <h1 className="text-2xl font-newsreader mb-4">Authentication Failed</h1>
+        <p className="text-gray-600 mb-6">{getErrorMessage()}</p>
+        
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 text-left">
+          <p className="text-red-700 text-sm">
+            Error: {reason}
+            {message && <span className="block mt-1">{message}</span>}
+          </p>
         </div>
-        <Link href="/" className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors">
-          Return to Home
-        </Link>
+        
+        <button 
+          onClick={() => router.push('/')}
+          className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
+        >
+          Return Home
+        </button>
       </div>
     </div>
   )
 }
 
-// Main page component with Suspense
+// Main page component with Suspense wrapper
 export default function AuthErrorPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-sm max-w-md w-full text-center">
           <h1 className="text-2xl font-newsreader mb-4">Loading...</h1>
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-500 mx-auto"></div>
