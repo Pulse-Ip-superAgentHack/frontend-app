@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/DashboardNavbar'
 import localFont from 'next/font/local'
 import StyleFixer from '@/components/StyleFixer'
+import { Toaster } from "@/components/ui/sonner"
 
 // Load your local font files
 const newsreader = localFont({
@@ -45,6 +46,7 @@ export default function RootLayout({
         <Navbar />
         <StyleFixer />
         <main>{children}</main>
+        <Toaster />
       </body>
     </html>
   )

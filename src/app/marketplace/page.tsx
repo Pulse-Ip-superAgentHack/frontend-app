@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { toast } from "sonner"
 
 import { IpMetadata, LicenseTerms } from '@story-protocol/core-sdk'
 import { client } from '../../utils/storyUtils'
@@ -167,6 +168,15 @@ export default function MarketplacePage() {
     }
   }
 
+  const handleCreateAgent = () => {
+    toast.loading("Creating agent...", { duration: 3000 })
+    
+    // Simulate agent creation (replace with your actual logic)
+    setTimeout(() => {
+      toast.success("Agent created successfully")
+    }, 3000)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -185,7 +195,7 @@ export default function MarketplacePage() {
             </select>
             <button
               className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
-              onClick={mintIp}>
+              onClick={handleCreateAgent}>
               Create Agent
             </button>
           </div>

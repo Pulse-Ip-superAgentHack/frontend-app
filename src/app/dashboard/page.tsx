@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getTokens } from '@/utils/tokenStorage'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
+import { toast } from "sonner"
 
 import { IpMetadata, LicenseTerms } from '@story-protocol/core-sdk'
 import { client } from '../../utils/storyUtils'
 import { uploadJSONToIPFS } from '../../utils/uploadToIpfs'
 import { createHash } from 'crypto'
 import { Address, zeroAddress, zeroHash } from 'viem'
+import { Button } from "@/components/ui/button"
 
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -211,6 +213,15 @@ export default function Dashboard() {
   }
   }
   
+  const handleSellFitbitData = () => {
+    toast.loading("Processing your data...", { duration: 3000 })
+    
+    // Simulate data processing (replace with your actual logic)
+    setTimeout(() => {
+      toast.success("Fitbit data sold successfully")
+    }, 3000)
+  }
+  
   if (isLoading) {
     return <DashboardSkeleton />
   }
@@ -309,10 +320,12 @@ export default function Dashboard() {
         </div>
 
         <div className="flex justify-between items-center mb-8">
-          <button
-            onClick={mintIp}
-            className="bg-blue-500 text-white px-4 py-2 mt-4"
-          >Sell fitbit data</button>
+          <button 
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded" 
+            onClick={handleSellFitbitData}
+          >
+            Sell fitbit data
+          </button>
         </div>
       </div>
     </div>
