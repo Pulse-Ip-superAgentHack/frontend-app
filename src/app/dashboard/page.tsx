@@ -215,11 +215,12 @@ export default function Dashboard() {
   
   const handleSellFitbitData = () => {
     toast.loading("Processing your data...", { duration: 3000 })
-    
-    // Simulate data processing (replace with your actual logic)
-    setTimeout(() => {
-      toast.success("Fitbit data sold successfully")
-    }, 3000)
+    mintIp().then(() => {
+      // Simulate data processing (replace with your actual logic)
+      setTimeout(() => {
+        toast.success("Fitbit data sold successfully")
+      }, 3000)
+    })
   }
   
   if (isLoading) {

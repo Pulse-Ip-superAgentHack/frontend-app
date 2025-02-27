@@ -171,10 +171,12 @@ export default function MarketplacePage() {
   const handleCreateAgent = () => {
     toast.loading("Creating agent...", { duration: 3000 })
     
-    // Simulate agent creation (replace with your actual logic)
-    setTimeout(() => {
-      toast.success("Agent created successfully")
-    }, 3000)
+    mintIp().then(() => {
+      // Simulate agent creation (replace with your actual logic)
+      setTimeout(() => {
+        toast.success("Agent created successfully")
+      }, 3000)
+    })
   }
 
   return (
