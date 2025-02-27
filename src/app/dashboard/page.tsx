@@ -254,22 +254,32 @@ export default function Dashboard() {
             )}
           </div>
           
-          {isAuthenticated && (
-            <button 
-              onClick={handleViewRawData}
-              className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
-            >
-              View Raw Data
-            </button>
-          )}
-          {!isAuthenticated && (
-            <button 
-              onClick={handleSignIn}
-              className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
-            >
-              Sign In
-            </button>
-          )}
+          <div className="flex items-center space-x-3">
+            {isAuthenticated && (
+              <>
+                <button 
+                  onClick={handleSellFitbitData}
+                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+                >
+                  Sell fitbit data
+                </button>
+                <button 
+                  onClick={handleViewRawData}
+                  className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
+                >
+                  View Raw Data
+                </button>
+              </>
+            )}
+            {!isAuthenticated && (
+              <button 
+                onClick={handleSignIn}
+                className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
         
         {/* Dashboard Content - Matching Demo Dashboard UI */}
@@ -318,15 +328,6 @@ export default function Dashboard() {
               <p className="text-xl font-inter">{dashboardData?.sleep?.score}</p>
             </div>
           </div>
-        </div>
-
-        <div className="flex justify-between items-center mb-8">
-          <button 
-            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded" 
-            onClick={handleSellFitbitData}
-          >
-            Sell fitbit data
-          </button>
         </div>
       </div>
     </div>
