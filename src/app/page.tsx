@@ -72,48 +72,48 @@ export default function LandingPage() {
         
         {/* How It Works Section */}
         <div className="mt-24 bg-white rounded-xl shadow-sm p-8 md:p-12">
-          <h2 className="text-3xl font-newsreader font-bold text-gray-800 mb-6">How to Use PulseIP</h2>
+          <h2 className="text-3xl font-newsreader font-bold text-gray-800 mb-8">How to Use PulseIP</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <div className="flex items-start gap-3">
-                <div className="bg-lime-100 text-lime-800 rounded-full w-8 h-8 flex items-center justify-center shrink-0 mt-1">1</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+            <div className="space-y-8">
+              <div className="flex items-start gap-4">
+                <div className="bg-lime-100 text-lime-800 rounded-full w-8 h-8 flex items-center justify-center shrink-0 mt-1 font-medium">1</div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Connect Your Fitbit</h3>
+                  <h3 className="font-medium text-gray-900 text-lg">Connect Your Fitbit</h3>
                   <p className="text-gray-600 mt-1">Click "Get Started" and sign in with your Fitbit account to authorize the app.</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-3">
-                <div className="bg-lime-100 text-lime-800 rounded-full w-8 h-8 flex items-center justify-center shrink-0 mt-1">2</div>
+              <div className="flex items-start gap-4">
+                <div className="bg-lime-100 text-lime-800 rounded-full w-8 h-8 flex items-center justify-center shrink-0 mt-1 font-medium">2</div>
                 <div>
-                  <h3 className="font-medium text-gray-900">View Your Data</h3>
+                  <h3 className="font-medium text-gray-900 text-lg">View Your Data</h3>
                   <p className="text-gray-600 mt-1">After authorization, you'll be redirected to the dashboard with your health data.</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-3">
-                <div className="bg-lime-100 text-lime-800 rounded-full w-8 h-8 flex items-center justify-center shrink-0 mt-1">3</div>
+              <div className="flex items-start gap-4">
+                <div className="bg-lime-100 text-lime-800 rounded-full w-8 h-8 flex items-center justify-center shrink-0 mt-1 font-medium">3</div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Access Insights</h3>
+                  <h3 className="font-medium text-gray-900 text-lg">Access Insights</h3>
                   <p className="text-gray-600 mt-1">Explore your activity, sleep, heart rate, and more through our intuitive interface.</p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-xl font-medium text-gray-900 mb-4">Why This Works</h3>
+            <div className="bg-gray-50 p-6 rounded-lg self-stretch">
+              <h3 className="text-xl font-medium text-gray-900 mb-5">Why This Works</h3>
               <p className="text-gray-600 mb-4">
                 This application uses OAuth 2.0 to securely access your Fitbit data. The token we obtain allows us to access your data without storing your password.
               </p>
               <p className="text-gray-600 mb-4">
                 We store this token locally in your browser, so you won't need to authorize again for a while.
               </p>
-              <p className="text-gray-600 font-medium">
+              <p className="text-gray-600 font-medium mb-6">
                 Your data stays on your device - we don't store it on any server.
               </p>
               
-              <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-4">
+              <div className="mt-auto bg-blue-50 border-l-4 border-blue-500 p-4">
                 <p className="text-blue-700 text-sm">
                   <strong>Privacy First:</strong> We never see or store your personal health data. Everything happens securely on your device.
                 </p>
