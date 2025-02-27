@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getTokens } from '@/utils/tokenStorage'
 import { useRouter } from 'next/navigation'
 
 export default function RawDataPage() {
@@ -9,102 +8,88 @@ export default function RawDataPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchRawData = async () => {
-      try {
-        setLoading(true)
-        const tokens = getTokens()
-        
-        if (!tokens) {
-          // Redirect to login if no tokens
-          router.push('/auth/signin')
+  const fetchRawData = async () => {
+    try {
+      setLoading(true)
+      
+      // Instead of direct API calls, use our server API
+      const response = await fetch('/api/fitbit/data')
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Not authenticated, redirecting...')
+          // Redirect to login
+          router.push('/api/auth/initiate')
           return
         }
-        
-        console.log('Fetching raw data with token:', tokens.access_token.substring(0, 10) + '...')
-        
-        // Fetch raw data from API
-        const response = await fetch('/api/fitbit/raw', {
-          headers: {
-            Authorization: `Bearer ${tokens.access_token}`
-          }
-        })
-        
-        if (!response.ok) {
-          console.error('Raw data response not OK:', response.status)
-          throw new Error('Failed to fetch raw data')
-        }
-        
-        const data = await response.json()
-        console.log('Raw data fetched successfully:', Object.keys(data))
-        setRawData(data)
-      } catch (error) {
-        console.error('Error fetching raw data:', error)
-      } finally {
-        setLoading(false)
+        throw new Error(`API request failed with status ${response.status}`)
       }
+      
+      const data = await response.json()
+      console.log('Raw data fetched:', Object.keys(data))
+      setRawData(data)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setRawData({
+        error: String(error)
+      })
+    } finally {
+      setLoading(false)
     }
-    
-    fetchRawData()
-  }, [router])
-  
-  const handleCopyData = () => {
-    navigator.clipboard.writeText(JSON.stringify(rawData, null, 2))
-      .then(() => alert('Data copied to clipboard'))
-      .catch(err => console.error('Failed to copy data:', err))
   }
-  
+
+  useEffect(() => {
+    fetchRawData()
+  }, [])
+
   const handleRefreshData = () => {
     setLoading(true)
     fetchRawData()
   }
-  
-  const handleLogout = () => {
-    localStorage.removeItem('fitbitTokens')
-    localStorage.removeItem('fitbitData')
-    router.push('/')
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading raw data...</div>
-      </div>
-    )
-  }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Fitbit Raw Data</h1>
-          <div className="flex space-x-4">
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-newsreader text-gray-900">Fitbit Raw Data</h1>
+          <div className="flex space-x-3">
             <button 
-              onClick={handleCopyData}
-              className="bg-blue-600 text-white py-2 px-4 rounded"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(rawData, null, 2))
+                alert('Data copied to clipboard!')
+              }}
+              className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+              disabled={loading || !rawData}
             >
               Copy Data
             </button>
             <button 
               onClick={handleRefreshData}
-              className="bg-green-600 text-white py-2 px-4 rounded"
+              className="bg-lime-600 text-white py-2 px-4 rounded hover:bg-lime-700 transition-colors"
+              disabled={loading}
             >
               Refresh Data
             </button>
             <button 
-              onClick={handleLogout}
-              className="bg-red-600 text-white py-2 px-4 rounded"
+              onClick={() => router.push('/api/auth/logout')}
+              className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
             >
               Log Out
             </button>
           </div>
         </div>
         
-        <pre className="bg-gray-900 p-6 rounded-lg overflow-auto max-h-[70vh] text-xs md:text-sm">
-          <code className="text-green-400">
-            {JSON.stringify(rawData, null, 2)}
-          </code>
-        </pre>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-500"></div>
+          </div>
+        ) : (
+          <div className="bg-gray-900 rounded-lg shadow-sm overflow-hidden p-4">
+            <pre className="text-green-400 overflow-auto max-h-[70vh] text-xs md:text-sm">
+              {JSON.stringify(rawData, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   )
