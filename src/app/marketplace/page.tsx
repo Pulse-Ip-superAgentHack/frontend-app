@@ -107,7 +107,7 @@ export default function MarketplacePage() {
     
       const ipMetadata = {
         "title": "Fitness AI Agent",
-        "description": "This is an example test eliza AI Agent registered on Story.",
+        "description": "Ai trained on Ellen's fitness data.",
         "createdAt": "1740005219",
         "creators": [
           {
