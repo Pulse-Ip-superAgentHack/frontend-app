@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { getTokens, removeTokens } from '@/utils/tokenStorage'
@@ -53,9 +54,13 @@ const DashboardNavbar = () => {
           transition={{ duration: 0.5 }}
         >
           <Link href="/dashboard" className="flex items-center">
-            <div className="rounded-full p-3 flex items-center shadow-sm">
-              <span className="font-inter font-bold text-gray-900">Pulse <span className="text-lime-600">IP</span></span>
-            </div>
+            <Image 
+              src="/pulse_logo.png" 
+              alt="Pulse Logo" 
+              width={70} 
+              height={70} 
+              className="my-1"
+            />
           </Link>
         </motion.div>
         
