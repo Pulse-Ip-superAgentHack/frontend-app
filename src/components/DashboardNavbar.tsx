@@ -54,13 +54,16 @@ const DashboardNavbar = () => {
           transition={{ duration: 0.5 }}
         >
           <Link href="/dashboard" className="flex items-center">
-            <Image 
-              src="/pulse_logo.png" 
-              alt="Pulse Logo" 
-              width={70} 
-              height={70} 
-              className="my-1"
-            />
+            <div className="overflow-hidden h-14 w-[100px] relative">
+              <Image 
+                src="/pulse_logo.png" 
+                alt="Pulse Logo" 
+                fill
+                sizes="100px"
+                className="object-cover object-center scale-125"
+                style={{ objectPosition: "center 50%" }}
+              />
+            </div>
           </Link>
         </motion.div>
         
